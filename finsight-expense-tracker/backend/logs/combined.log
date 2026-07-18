@@ -16641,3 +16641,8 @@
 {"level":"info","message":"GET /api/notifications 304 - 375ms","service":"finsight-backend","timestamp":"2026-07-18 16:29:08"}
 {"level":"info","message":"GET /api/notifications 304 - 210ms","service":"finsight-backend","timestamp":"2026-07-18 16:30:08"}
 {"level":"info","message":"GET /api/notifications/unread-count 304 - 209ms","service":"finsight-backend","timestamp":"2026-07-18 16:30:08"}
+{"level":"info","message":"Server running in development mode on port 5001","service":"finsight-backend","timestamp":"2026-07-18 16:30:16"}
+{"level":"info","message":"Recurring expense scheduler initialized","service":"finsight-backend","timestamp":"2026-07-18 16:30:16"}
+{"level":"info","message":"Running daily check for recurring expenses...","service":"finsight-backend","timestamp":"2026-07-18 16:30:16"}
+{"level":"info","message":"GET /api/notifications/unread-count 304 - 305ms","service":"finsight-backend","timestamp":"2026-07-18 16:31:08"}
+{"level":"info","message":"GET /api/notifications 304 - 315ms","service":"finsight-backend","timestamp":"2026-07-18 16:31:08"}
