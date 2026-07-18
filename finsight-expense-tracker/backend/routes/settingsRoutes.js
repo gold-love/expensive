@@ -90,7 +90,8 @@ router.delete('/api-keys/:id', protect, revokeApiKey);
 router.post('/organization/logo', protect, upload.single('logo'), (req, res) => {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
     const normalizedPath = req.file.path.replace(/\\/g, '/');
-    res.json({ logoUrl: `http://localhost:5000/${normalizedPath}` });
+    const baseUrl = process.env.BACKEND_URL || process.env.API_BASE_URL || 'http://localhost:5001';
+    res.json({ logoUrl: `${baseUrl}/${normalizedPath}` });
 });
 
 // Admin credential verification (any logged-in user can attempt)

@@ -11,6 +11,36 @@ const sendEmail = require('../utils/sendEmail');
 const { generate2FASecret, verify2FAToken, generateQRCode } = require('../utils/twoFactor');
 const { logAudit } = require('../utils/audit');
 
+const DEFAULT_ORGANIZATION_BRANDING = {
+    primaryColor: '#6366f1',
+    logoUrl: null,
+    companyWebsite: ''
+};
+
+const DEFAULT_ORGANIZATION_CATEGORIES = [
+    'Food', 'Transport', 'Utilities', 'Entertainment', 'Shopping', 'Health', 'Travel', 'Services', 'Taxes', 'Salary', 'Rent', 'Others'
+];
+
+const ensureOrganizationContext = async (req, user = req.user) => {
+    if (!user) throw new Error('User context is required');
+
+    if (user.organizationId) {
+        return user.organizationId;
+    }
+
+    const org = await Organization.create({
+        name: user.name ? `${user.name}'s Organization` : 'Default Organization',
+        subscriptionPlan: 'free',
+        settings: {},
+        branding: DEFAULT_ORGANIZATION_BRANDING,
+        categories: DEFAULT_ORGANIZATION_CATEGORIES,
+    });
+
+    user.organizationId = org.id;
+    await user.save();
+    return org.id;
+};
+
 // --- Profile & Preferences ---
 
 const updateNotificationPreferences = async (req, res) => {
@@ -224,13 +254,16 @@ const get2FAQR = async (req, res) => {
 
 const getOrganizationSettings = async (req, res) => {
     try {
-        const org = await Organization.findByPk(req.user.organizationId);
+        const organizationId = await ensureOrganizationContext(req);
+        const org = await Organization.findByPk(organizationId);
         if (!org) return res.status(404).json({ message: 'Organization not found' });
+
+        const settings = org.settings || {};
         res.json({
             name: org.name,
-            branding: org.branding,
-            categories: org.categories,
-            ...org.settings
+            branding: org.branding || DEFAULT_ORGANIZATION_BRANDING,
+            categories: org.categories || DEFAULT_ORGANIZATION_CATEGORIES,
+            ...settings
         });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -238,10 +271,11 @@ const getOrganizationSettings = async (req, res) => {
 const updateOrganizationSettings = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
-        const org = await Organization.findByPk(req.user.organizationId);
+        const organizationId = await ensureOrganizationContext(req);
+        const org = await Organization.findByPk(organizationId);
         const { branding, categories, ...settings } = req.body;
-        if (settings) org.settings = { ...org.settings, ...settings };
-        if (branding) org.branding = { ...org.branding, ...branding };
+        if (settings) org.settings = { ...(org.settings || {}), ...settings };
+        if (branding) org.branding = { ...(org.branding || DEFAULT_ORGANIZATION_BRANDING), ...branding };
         if (categories) org.categories = categories;
         await org.save();
         res.json({ message: 'Organization settings updated' });
@@ -251,8 +285,9 @@ const updateOrganizationSettings = async (req, res) => {
 const getAllUsers = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+        const organizationId = await ensureOrganizationContext(req);
         const users = await User.findAll({
-            where: { organizationId: req.user.organizationId },
+            where: { organizationId },
             attributes: ['id', 'name', 'email', 'role', 'jobTitle', 'department', 'createdAt', 'isActive']
         });
         res.json(users);
@@ -262,7 +297,8 @@ const getAllUsers = async (req, res) => {
 const updateUserRole = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
-        const user = await User.findOne({ where: { id: req.params.id || req.body.id, organizationId: req.user.organizationId } });
+        const organizationId = await ensureOrganizationContext(req);
+        const user = await User.findOne({ where: { id: req.params.id || req.body.id, organizationId } });
         if (!user) return res.status(404).json({ message: 'User not found' });
         user.role = req.body.role;
         await user.save();
@@ -273,7 +309,8 @@ const updateUserRole = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
-        const user = await User.findOne({ where: { id: req.params.id || req.body.id, organizationId: req.user.organizationId } });
+        const organizationId = await ensureOrganizationContext(req);
+        const user = await User.findOne({ where: { id: req.params.id || req.body.id, organizationId } });
         if (!user) return res.status(404).json({ message: 'User not found' });
         user.isActive = !user.isActive;
         await user.save();
@@ -293,8 +330,9 @@ const inviteUser = async (req, res) => {
 const exportOrganizationData = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
-        const expenses = await Expense.findAll({ where: { organizationId: req.user.organizationId } });
-        const users = await User.findAll({ where: { organizationId: req.user.organizationId }, attributes: { exclude: ['password'] } });
+        const organizationId = await ensureOrganizationContext(req);
+        const expenses = await Expense.findAll({ where: { organizationId } });
+        const users = await User.findAll({ where: { organizationId }, attributes: { exclude: ['password'] } });
         res.json({ expenses, users, exportedAt: new Date().toISOString() });
     } catch (error) { res.status(500).json({ message: error.message }); }
 };
@@ -302,11 +340,12 @@ const exportOrganizationData = async (req, res) => {
 const restoreOrganizationData = async (req, res) => {
     try {
         if (req.user.role !== 'admin') return res.status(403).json({ message: 'Admin only' });
+        const organizationId = await ensureOrganizationContext(req);
         const { records } = req.body;
         if (!records) return res.status(400).json({ message: 'No data' });
         const cleanRecords = records.map(r => {
             const { id, createdAt, updatedAt, ...rest } = r;
-            return { ...rest, organizationId: req.user.organizationId, status: 'pending' };
+            return { ...rest, organizationId, status: 'pending' };
         });
         await Expense.bulkCreate(cleanRecords);
         res.json({ message: `Restored ${cleanRecords.length} records` });
@@ -324,13 +363,14 @@ const getApiKeys = async (req, res) => {
 
 const createApiKey = async (req, res) => {
     try {
+        const organizationId = await ensureOrganizationContext(req);
         const { name } = req.body;
         const rawKey = `fs_${crypto.randomBytes(24).toString('hex')}`;
         const apiKey = await ApiKey.create({
             name,
             key: rawKey,
             userId: req.user.id,
-            organizationId: req.user.organizationId
+            organizationId
         });
         res.status(201).json(apiKey);
     } catch (error) { res.status(500).json({ message: error.message }); }
@@ -382,6 +422,7 @@ const verifyAdminCredentials = async (req, res) => {
 };
 
 module.exports = {
+    ensureOrganizationContext,
     updateNotificationPreferences,
     updateAdvancedPreferences,
     exportUserData,

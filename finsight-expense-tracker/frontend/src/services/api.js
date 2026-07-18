@@ -1,8 +1,17 @@
 import axios from 'axios';
 
+const rawApiBase = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const apiBase = rawApiBase.endsWith('/api') ? rawApiBase.replace(/\/api$/, '') : rawApiBase;
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || '/api',
+    baseURL: `${apiBase}/api`,
 });
+
+export const getApiUrl = (path = '') => {
+    if (!path) return apiBase;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${apiBase}${normalizedPath}`;
+};
 
 api.interceptors.request.use(
     (config) => {

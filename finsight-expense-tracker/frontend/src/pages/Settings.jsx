@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
-import api from '../services/api';
+import api, { getApiUrl } from '../services/api';
 import { getTranslation } from '../utils/i18n';
 import { CURRENCIES } from '../utils/currency';
 
@@ -426,7 +426,7 @@ const Settings = () => {
                         <div style={{ marginRight: '30px', position: 'relative' }}>
                             <div style={{ width: '120px', height: '120px', borderRadius: '30px', background: 'linear-gradient(135deg, var(--primary-light), var(--primary))', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '4px solid var(--white)', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }}>
                                 {user?.profilePicture ? (
-                                    <img src={`http://localhost:5000/${user.profilePicture.startsWith('/') ? user.profilePicture.slice(1) : user.profilePicture}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={getApiUrl(user.profilePicture)} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
                                     <span style={{ fontSize: '50px', color: 'white' }}>{user?.name?.charAt(0) || 'U'}</span>
                                 )}

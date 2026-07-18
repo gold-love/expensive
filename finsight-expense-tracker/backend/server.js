@@ -13,10 +13,10 @@ const { initRecurringJobs } = require('./utils/recurringJob');
 dotenv.config();
 
 // Connect to database
-connectDB();
-
-// Initialize recurring jobs
-initRecurringJobs();
+connectDB().then(() => {
+    // Initialize recurring jobs
+    initRecurringJobs();
+});
 
 const app = express();
 
@@ -76,7 +76,7 @@ app.use('/api/feedback', require('./routes/feedbackRoutes'));
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5001);
 
 app.listen(PORT, () => {
     logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);

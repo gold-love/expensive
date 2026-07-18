@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import ExpenseTable from '../components/ExpenseTable';
 import ExpenseForm from '../components/ExpenseForm';
 import DatePickerCalendar from '../components/DatePickerCalendar';
-import api from '../services/api';
+import api, { getApiUrl } from '../services/api';
 import AuthContext from '../context/AuthContext';
 
 const Expenses = () => {
@@ -590,7 +590,7 @@ const Expenses = () => {
                             <div style={{ display: 'flex', gap: '15px' }}>
                                 {viewingExpense.receiptUrl && (
                                     <a 
-                                        href={`http://localhost:5000${viewingExpense.receiptUrl}`} 
+                                        href={getApiUrl(viewingExpense.receiptUrl)}
                                         target="_blank" 
                                         rel="noopener noreferrer"
                                         className="btn"

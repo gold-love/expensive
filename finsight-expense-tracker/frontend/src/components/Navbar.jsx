@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import ThemeContext from '../context/ThemeContext';
-import api from '../services/api';
+import api, { getApiUrl } from '../services/api';
 import { getTranslation } from '../utils/i18n';
 
 const Navbar = ({ onMenuClick }) => {
@@ -232,7 +232,7 @@ const Navbar = ({ onMenuClick }) => {
                     <div style={{
                         width: '32px', height: '32px', borderRadius: '50%',
                         background: 'var(--grad-primary)',
-                        backgroundImage: user?.profilePicture ? `url(http://localhost:5000/${user.profilePicture.startsWith('/') ? user.profilePicture.slice(1) : user.profilePicture.replace(/\\/g, '/')})` : 'none',
+                        backgroundImage: user?.profilePicture ? `url(${getApiUrl(user.profilePicture)})` : 'none',
                         backgroundSize: 'cover', backgroundPosition: 'center',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: 'white', fontWeight: 'bold', fontSize: '13px',
