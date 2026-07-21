@@ -12,7 +12,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
         ssl: (process.env.NODE_ENV === 'production' || (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost')))
             ? {
-                require: true,
+                require: false,
                 rejectUnauthorized: false,
             }
             : false,
